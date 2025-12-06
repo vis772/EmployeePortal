@@ -1,0 +1,225 @@
+// Prisma schema for Nova Creations Employee Portal
+// Run `npx prisma generate` after changes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User account for authentication
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(EMPLOYEE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  employeeProfile EmployeeProfile?
+  announcements   Announcement[]   @relation("CreatedAnnouncements")
+
+  @@index([email])
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+// Employee profile with personal and employment details
+model EmployeeProfile {
+  id                          String           @id @default(cuid())
+  userId                      String           @unique
+  user                        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Personal info
+  fullName                    String?
+  dateOfBirth                 DateTime?
+  phone                       String?
+  address                     String?
+  
+  // Emergency contact
+  emergencyContactName        String?
+  emergencyContactRelationship String?
+  emergencyContactPhone       String?
+  
+  // Employment details
+  roleTitle                   String?
+  startDate                   DateTime?
+  employmentType              EmploymentType?
+  wage                        Decimal?         @db.Decimal(10, 2)
+  
+  // Onboarding status
+  onboardingStatus            OnboardingStatus @default(NOT_STARTED)
+  onboardingCompletedAt       DateTime?
+  
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+
+  // Relations
+  bankDetails                 BankDetails?
+  onboardingSteps             EmployeeOnboardingStep[]
+  agreements                  EmployeeAgreement[]
+  documents                   EmployeeDocument[]
+
+  @@index([onboardingStatus])
+}
+
+enum EmploymentType {
+  HOURLY
+  SALARY
+}
+
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// Bank/payment details for employee
+model BankDetails {
+  id              String      @id @default(cuid())
+  employeeId      String      @unique
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  bankName        String
+  accountType     AccountType
+  routingNumber   String
+  accountNumber   String      // In production, encrypt this
+  last4Account    String      // Derived from accountNumber for display
+  confirmed       Boolean     @default(false)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+}
+
+// Template for onboarding steps (configurable by admin)
+model OnboardingStepTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  key         String   @unique // e.g., "personal_info", "bank_info"
+  description String?
+  order       Int
+  isRequired  Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  employeeSteps EmployeeOnboardingStep[]
+
+  @@index([order])
+}
+
+// Employee's progress on onboarding steps
+model EmployeeOnboardingStep {
+  id             String                 @id @default(cuid())
+  employeeId     String
+  employee       EmployeeProfile        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  stepTemplateId String
+  stepTemplate   OnboardingStepTemplate @relation(fields: [stepTemplateId], references: [id], onDelete: Cascade)
+  
+  status         StepStatus             @default(NOT_STARTED)
+  completedAt    DateTime?
+  
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@unique([employeeId, stepTemplateId])
+  @@index([employeeId])
+}
+
+enum StepStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// Template for agreements/documents employees must sign
+model AgreementTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  pdfUrl      String   // URL to the PDF document
+  isRequired  Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  order       Int
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  employeeAgreements EmployeeAgreement[]
+
+  @@index([order])
+}
+
+// Employee's acceptance of agreements
+model EmployeeAgreement {
+  id                  String            @id @default(cuid())
+  employeeId          String
+  employee            EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  agreementTemplateId String
+  agreementTemplate   AgreementTemplate @relation(fields: [agreementTemplateId], references: [id], onDelete: Cascade)
+  
+  accepted            Boolean           @default(false)
+  acceptedAt          DateTime?
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@unique([employeeId, agreementTemplateId])
+  @@index([employeeId])
+}
+
+// Documents uploaded by employees
+model EmployeeDocument {
+  id         String          @id @default(cuid())
+  employeeId String
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  type       DocumentType
+  fileName   String
+  fileUrl    String          // In production, this would be S3/cloud storage URL
+  mimeType   String?
+  fileSize   Int?            // Size in bytes
+  
+  uploadedAt DateTime        @default(now())
+
+  @@index([employeeId])
+}
+
+enum DocumentType {
+  ID
+  DRIVERS_LICENSE
+  PASSPORT
+  OTHER
+}
+
+// Announcements posted by admins
+model Announcement {
+  id               String   @id @default(cuid())
+  title            String
+  body             String
+  isActive         Boolean  @default(true)
+  
+  createdByAdminId String
+  createdByAdmin   User     @relation("CreatedAnnouncements", fields: [createdByAdminId], references: [id])
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([isActive, createdAt])
+}
+
