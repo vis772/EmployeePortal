@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - List all announcements
 export async function GET() {
