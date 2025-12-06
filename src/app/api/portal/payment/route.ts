@@ -3,6 +3,7 @@ import { getCurrentUser, requireRole } from '@/lib/auth';
 import { bankUpdateSchema } from '@/lib/validations';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/lib/utils';
+import { encrypt } from '@/lib/encryption';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -55,6 +56,10 @@ export async function PUT(request: NextRequest) {
     }
 
     const last4Account = accountNumber.slice(-4);
+    
+    // Encrypt sensitive bank data
+    const encryptedAccountNumber = encrypt(accountNumber);
+    const encryptedRoutingNumber = encrypt(routingNumber);
 
     const bankDetails = await prisma.bankDetails.upsert({
       where: { employeeId: profile.id },
@@ -62,16 +67,16 @@ export async function PUT(request: NextRequest) {
         employeeId: profile.id,
         bankName,
         accountType,
-        routingNumber,
-        accountNumber,
+        routingNumber: encryptedRoutingNumber,
+        accountNumber: encryptedAccountNumber,
         last4Account,
         confirmed: true,
       },
       update: {
         bankName,
         accountType,
-        routingNumber,
-        accountNumber,
+        routingNumber: encryptedRoutingNumber,
+        accountNumber: encryptedAccountNumber,
         last4Account,
         confirmed: true,
       },

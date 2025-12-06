@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { loginSchema } from '@/lib/validations';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { checkRateLimit, resetRateLimit, LOGIN_RATE_LIMIT } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,6 +25,26 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password } = result.data;
+
+    // Check rate limit (by email to prevent brute force on specific accounts)
+    const rateLimitKey = `login:${email.toLowerCase()}`;
+    const rateLimit = checkRateLimit(rateLimitKey, LOGIN_RATE_LIMIT);
+    
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Too many login attempts. Please try again in ${rateLimit.retryAfter} seconds.` 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfter),
+            'X-RateLimit-Remaining': '0',
+          }
+        }
+      );
+    }
 
     // Find user
     const user = await prisma.user.findUnique({
@@ -77,6 +98,9 @@ export async function POST(request: NextRequest) {
       maxAge: TOKEN_MAX_AGE,
       path: '/',
     });
+
+    // Reset rate limit on successful login
+    resetRateLimit(rateLimitKey);
 
     return response;
   } catch (error) {

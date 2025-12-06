@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCurrentUser, requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse, notFoundResponse } from '@/lib/utils';
+import { encrypt } from '@/lib/encryption';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -49,25 +50,29 @@ export async function POST(
       },
     });
 
-    // Update bank details
+    // Update bank details (encrypted)
     if (bankInfo.bankName && bankInfo.accountNumber) {
       const last4Account = bankInfo.accountNumber.slice(-4);
+      // Encrypt sensitive bank data
+      const encryptedAccountNumber = encrypt(bankInfo.accountNumber);
+      const encryptedRoutingNumber = encrypt(bankInfo.routingNumber);
+      
       await prisma.bankDetails.upsert({
         where: { employeeId: id },
         create: {
           employeeId: id,
           bankName: bankInfo.bankName,
           accountType: bankInfo.accountType || 'CHECKING',
-          routingNumber: bankInfo.routingNumber,
-          accountNumber: bankInfo.accountNumber,
+          routingNumber: encryptedRoutingNumber,
+          accountNumber: encryptedAccountNumber,
           last4Account,
           confirmed: true,
         },
         update: {
           bankName: bankInfo.bankName,
           accountType: bankInfo.accountType || 'CHECKING',
-          routingNumber: bankInfo.routingNumber,
-          accountNumber: bankInfo.accountNumber,
+          routingNumber: encryptedRoutingNumber,
+          accountNumber: encryptedAccountNumber,
           last4Account,
           confirmed: true,
         },
