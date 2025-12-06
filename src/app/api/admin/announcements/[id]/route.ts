@@ -4,6 +4,8 @@ import { announcementSchema } from '@/lib/validations';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse, notFoundResponse } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 // GET - Get single announcement
 export async function GET(
   request: NextRequest,

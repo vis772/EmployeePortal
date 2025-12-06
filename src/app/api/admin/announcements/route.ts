@@ -4,6 +4,8 @@ import { announcementSchema } from '@/lib/validations';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 // GET - List all announcements
 export async function GET() {
   const user = await getCurrentUser();

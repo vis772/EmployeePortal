@@ -4,6 +4,8 @@ import { bankUpdateSchema } from '@/lib/validations';
 import { prisma } from '@/lib/db';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 // GET - Get current bank details
 export async function GET() {
   const user = await getCurrentUser();
