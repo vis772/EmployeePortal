@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { put } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -39,20 +38,15 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', id);
-    await mkdir(uploadsDir, { recursive: true });
-
     // Generate unique filename
     const timestamp = Date.now();
     const extension = file.name.split('.').pop();
-    const fileName = `${documentType.toLowerCase()}_${timestamp}.${extension}`;
-    const filePath = path.join(uploadsDir, fileName);
+    const fileName = `employees/${id}/${documentType.toLowerCase()}_${timestamp}.${extension}`;
 
-    // Write file to disk
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    // Upload to Vercel Blob Storage
+    const blob = await put(fileName, file, {
+      access: 'public',
+    });
 
     // Save to database
     const document = await prisma.employeeDocument.create({
@@ -60,7 +54,7 @@ export async function POST(
         employeeId: id,
         type: documentType as any,
         fileName: file.name,
-        fileUrl: `/uploads/${id}/${fileName}`,
+        fileUrl: blob.url,
         mimeType: file.type,
         fileSize: file.size,
       },
