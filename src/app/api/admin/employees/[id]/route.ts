@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db';
 // GET - Get single employee
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const user = await getCurrentUser();
   if (!user) {
@@ -15,7 +15,7 @@ export async function GET(
     return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   const employee = await prisma.employeeProfile.findUnique({
     where: { id },
@@ -45,7 +45,7 @@ export async function GET(
 // DELETE - Delete employee
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const user = await getCurrentUser();
   if (!user) {
@@ -55,7 +55,7 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   try {
     // Get the employee profile to find the user ID

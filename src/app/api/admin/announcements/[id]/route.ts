@@ -7,13 +7,13 @@ import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse
 // GET - Get single announcement
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const user = await getCurrentUser();
   if (!user) return unauthorizedResponse();
   if (!requireRole(user, ['ADMIN'])) return forbiddenResponse();
 
-  const { id } = await params;
+  const { id } = params;
 
   const announcement = await prisma.announcement.findUnique({
     where: { id },
@@ -32,13 +32,13 @@ export async function GET(
 // PUT - Update announcement
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const user = await getCurrentUser();
   if (!user) return unauthorizedResponse();
   if (!requireRole(user, ['ADMIN'])) return forbiddenResponse();
 
-  const { id } = await params;
+  const { id } = params;
 
   try {
     const body = await request.json();
@@ -70,13 +70,13 @@ export async function PUT(
 // DELETE - Delete announcement
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const user = await getCurrentUser();
   if (!user) return unauthorizedResponse();
   if (!requireRole(user, ['ADMIN'])) return forbiddenResponse();
 
-  const { id } = await params;
+  const { id } = params;
 
   try {
     await prisma.announcement.delete({

@@ -5,13 +5,13 @@ import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const user = await getCurrentUser();
   if (!user) return unauthorizedResponse();
   if (!requireRole(user, ['ADMIN'])) return forbiddenResponse();
 
-  const { id } = await params;
+  const { id } = params;
 
   try {
     const body = await request.json();
