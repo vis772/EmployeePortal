@@ -4,6 +4,8 @@ import { formatDateTime } from '@/lib/utils';
 import { CreateAnnouncementButton } from './CreateAnnouncementButton';
 import { AnnouncementActions } from './AnnouncementActions';
 
+export const dynamic = 'force-dynamic';
+
 async function getAnnouncements() {
   return prisma.announcement.findMany({
     orderBy: { createdAt: 'desc' },

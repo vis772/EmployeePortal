@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db';
 import { Card, CardBody, CardHeader, CardTitle, Badge } from '@/components/ui';
 
+export const dynamic = 'force-dynamic';
+
 async function getSettings() {
   const [stepTemplates, agreementTemplates] = await Promise.all([
     prisma.onboardingStepTemplate.findMany({ orderBy: { order: 'asc' } }),

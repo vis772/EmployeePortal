@@ -5,6 +5,8 @@ import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 import { ProfileEditForm } from './ProfileEditForm';
 
+export const dynamic = 'force-dynamic';
+
 async function getProfile(userId: string) {
   return prisma.employeeProfile.findUnique({
     where: { userId },

@@ -4,6 +4,8 @@ import { formatStatus, formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { InviteEmployeeButton } from './InviteEmployeeButton';
 
+export const dynamic = 'force-dynamic';
+
 async function getEmployees() {
   return prisma.employeeProfile.findMany({
     orderBy: { createdAt: 'desc' },

@@ -5,6 +5,8 @@ import { Card, CardBody, CardHeader, CardTitle, Badge } from '@/components/ui';
 import { formatStatus, formatDateTime } from '@/lib/utils';
 import { PaymentEditForm } from './PaymentEditForm';
 
+export const dynamic = 'force-dynamic';
+
 async function getBankDetails(userId: string) {
   const profile = await prisma.employeeProfile.findUnique({
     where: { userId },

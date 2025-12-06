@@ -5,6 +5,8 @@ import { formatDate, formatDateTime, formatStatus } from '@/lib/utils';
 import Link from 'next/link';
 import { DeleteEmployeeButton } from './DeleteEmployeeButton';
 
+export const dynamic = 'force-dynamic';
+
 async function getEmployee(id: string) {
   const employee = await prisma.employeeProfile.findUnique({
     where: { id },

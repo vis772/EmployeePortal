@@ -3,6 +3,8 @@ import { Card, CardBody, CardHeader, CardTitle, Badge } from '@/components/ui';
 import { formatDate, formatStatus } from '@/lib/utils';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 async function getDashboardData() {
   const [employees, announcements, recentEmployees] = await Promise.all([
     prisma.employeeProfile.findMany({

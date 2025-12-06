@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { Card, CardBody, CardHeader, CardTitle, Badge } from '@/components/ui';
 import { formatDateTime, formatStatus, formatFileSize } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 async function getDocuments(userId: string) {
   const profile = await prisma.employeeProfile.findUnique({
     where: { userId },

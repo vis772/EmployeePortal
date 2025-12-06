@@ -4,6 +4,8 @@ import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui';
 import Link from 'next/link';
 import { OnboardingForm } from './OnboardingForm';
 
+export const dynamic = 'force-dynamic';
+
 async function getEmployeeData(id: string) {
   const employee = await prisma.employeeProfile.findUnique({
     where: { id },

@@ -5,6 +5,8 @@ import { Card, CardBody, CardHeader, CardTitle, Badge } from '@/components/ui';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 async function getPortalData(userId: string) {
   const [profile, announcements] = await Promise.all([
     prisma.employeeProfile.findUnique({
