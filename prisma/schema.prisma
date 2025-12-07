@@ -204,6 +204,7 @@ enum DocumentType {
   ID
   DRIVERS_LICENSE
   PASSPORT
+  ONBOARDING_PDF
   OTHER
 }
 

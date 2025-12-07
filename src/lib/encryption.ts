@@ -72,3 +72,4 @@ export function isEncrypted(text: string): boolean {
   return parts.length === 3 && parts[0].length === 32 && parts[1].length === 32;
 }
 
+
