@@ -42,10 +42,10 @@ export default async function PTOPage() {
   const sickRemaining = Number(ptoBalance.sickDays) - Number(ptoBalance.sickUsed);
   const personalRemaining = Number(ptoBalance.personalDays) - Number(ptoBalance.personalUsed);
 
-  const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
+  const statusColors: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
     PENDING: 'warning',
     APPROVED: 'success',
-    DENIED: 'error',
+    DENIED: 'danger',
     CANCELLED: 'default',
   };
 

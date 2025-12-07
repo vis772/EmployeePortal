@@ -5,10 +5,10 @@ import { PTOActionButtons } from './PTOActionButtons';
 
 export const dynamic = 'force-dynamic';
 
-const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
+const statusColors: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
   PENDING: 'warning',
   APPROVED: 'success',
-  DENIED: 'error',
+  DENIED: 'danger',
   CANCELLED: 'default',
 };
 
