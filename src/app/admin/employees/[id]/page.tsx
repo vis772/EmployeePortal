@@ -5,6 +5,7 @@ import { formatDate, formatDateTime, formatStatus } from '@/lib/utils';
 import Link from 'next/link';
 import { DeleteEmployeeButton } from './DeleteEmployeeButton';
 import { DownloadPDFButton } from './DownloadPDFButton';
+import { ChangeEmployeePassword } from './ChangeEmployeePassword';
 
 export const dynamic = 'force-dynamic';
 
@@ -108,6 +109,10 @@ export default async function EmployeeDetailPage({
               employeeId={employee.id} 
               employeeName={employee.fullName || employee.user.email}
               hasOnboardingPDF={employee.documents.some(doc => doc.type === 'ONBOARDING_PDF')}
+            />
+            <ChangeEmployeePassword 
+              employeeId={employee.id} 
+              employeeName={employee.fullName || employee.user.email} 
             />
             <DeleteEmployeeButton employeeId={employee.id} employeeName={employee.fullName || employee.user.email} />
           </div>
