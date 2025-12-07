@@ -4,6 +4,9 @@ import { loginSchema } from '@/lib/validations';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { checkRateLimit, resetRateLimit, LOGIN_RATE_LIMIT } from '@/lib/rateLimit';
+import { verifyTOTP, verifyBackupCode } from '@/lib/totp';
+import { decrypt } from '@/lib/encryption';
+import { auditLogWithRequest } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,6 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password } = result.data;
+    const totpCode = body.totpCode as string | undefined;
 
     // Check rate limit (by email to prevent brute force on specific accounts)
     const rateLimitKey = `login:${email.toLowerCase()}`;
@@ -53,6 +57,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
+      await auditLogWithRequest({
+        userId: null,
+        action: 'LOGIN_FAILED',
+        entityType: 'User',
+        details: { email, reason: 'User not found' },
+      }, request.headers);
       return NextResponse.json(
         { success: false, error: 'Invalid email or password' },
         { status: 401 }
@@ -62,10 +72,63 @@ export async function POST(request: NextRequest) {
     // Verify password
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
+      await auditLogWithRequest({
+        userId: user.id,
+        action: 'LOGIN_FAILED',
+        entityType: 'User',
+        entityId: user.id,
+        details: { reason: 'Invalid password' },
+      }, request.headers);
       return NextResponse.json(
         { success: false, error: 'Invalid email or password' },
         { status: 401 }
       );
+    }
+
+    // Check if 2FA is enabled
+    if (user.totpEnabled && user.totpSecret) {
+      if (!totpCode) {
+        // Return that 2FA is required
+        return NextResponse.json({
+          success: false,
+          error: '2FA code required',
+          requires2FA: true,
+        }, { status: 401 });
+      }
+
+      // Verify TOTP code
+      const secret = decrypt(user.totpSecret);
+      let isValidCode = verifyTOTP(totpCode, secret);
+
+      // If TOTP fails, try backup codes
+      if (!isValidCode && user.backupCodes) {
+        const hashedCodes: string[] = JSON.parse(user.backupCodes);
+        const backupResult = verifyBackupCode(totpCode, hashedCodes);
+        
+        if (backupResult.valid) {
+          isValidCode = true;
+          // Remove used backup code
+          hashedCodes.splice(backupResult.index, 1);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { backupCodes: JSON.stringify(hashedCodes) },
+          });
+        }
+      }
+
+      if (!isValidCode) {
+        await auditLogWithRequest({
+          userId: user.id,
+          action: 'LOGIN_FAILED',
+          entityType: 'User',
+          entityId: user.id,
+          details: { reason: 'Invalid 2FA code' },
+        }, request.headers);
+        return NextResponse.json(
+          { success: false, error: 'Invalid 2FA code', requires2FA: true },
+          { status: 401 }
+        );
+      }
     }
 
     // Create JWT token
@@ -101,6 +164,14 @@ export async function POST(request: NextRequest) {
 
     // Reset rate limit on successful login
     resetRateLimit(rateLimitKey);
+
+    // Audit log successful login
+    await auditLogWithRequest({
+      userId: user.id,
+      action: 'LOGIN',
+      entityType: 'User',
+      entityId: user.id,
+    }, request.headers);
 
     return response;
   } catch (error) {

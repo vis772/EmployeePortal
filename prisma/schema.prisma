@@ -19,9 +19,16 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Two-Factor Authentication
+  totpSecret    String?   // Encrypted TOTP secret
+  totpEnabled   Boolean   @default(false)
+  backupCodes   String?   // JSON array of hashed backup codes
+
   // Relations
-  employeeProfile EmployeeProfile?
-  announcements   Announcement[]   @relation("CreatedAnnouncements")
+  employeeProfile     EmployeeProfile?
+  announcements       Announcement[]        @relation("CreatedAnnouncements")
+  passwordResetTokens PasswordResetToken[]
+  auditLogs           AuditLog[]            @relation("AuditUser")
 
   @@index([email])
 }
@@ -66,6 +73,9 @@ model EmployeeProfile {
   onboardingSteps             EmployeeOnboardingStep[]
   agreements                  EmployeeAgreement[]
   documents                   EmployeeDocument[]
+  ptoRequests                 PTORequest[]
+  ptoBalance                  PTOBalance?
+  payStubs                    PayStub[]
 
   @@index([onboardingStatus])
 }
@@ -222,5 +232,155 @@ model Announcement {
   updatedAt        DateTime @updatedAt
 
   @@index([isActive, createdAt])
+}
+
+// ==================== PTO REQUEST SYSTEM ====================
+
+// PTO Balance for each employee
+model PTOBalance {
+  id              String          @id @default(cuid())
+  employeeId      String          @unique
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  vacationDays    Decimal         @default(0) @db.Decimal(5, 2)  // Total vacation days
+  sickDays        Decimal         @default(0) @db.Decimal(5, 2)  // Total sick days
+  personalDays    Decimal         @default(0) @db.Decimal(5, 2)  // Total personal days
+  
+  vacationUsed    Decimal         @default(0) @db.Decimal(5, 2)  // Used vacation days
+  sickUsed        Decimal         @default(0) @db.Decimal(5, 2)  // Used sick days
+  personalUsed    Decimal         @default(0) @db.Decimal(5, 2)  // Used personal days
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+// PTO Request
+model PTORequest {
+  id              String          @id @default(cuid())
+  employeeId      String
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  type            PTOType
+  startDate       DateTime
+  endDate         DateTime
+  totalDays       Decimal         @db.Decimal(5, 2)
+  reason          String?
+  
+  status          PTOStatus       @default(PENDING)
+  reviewedById    String?         // Admin who reviewed
+  reviewedAt      DateTime?
+  reviewNotes     String?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+enum PTOType {
+  VACATION
+  SICK
+  PERSONAL
+}
+
+enum PTOStatus {
+  PENDING
+  APPROVED
+  DENIED
+  CANCELLED
+}
+
+// ==================== PAY STUBS ====================
+
+model PayStub {
+  id              String          @id @default(cuid())
+  employeeId      String
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  payPeriodStart  DateTime
+  payPeriodEnd    DateTime
+  payDate         DateTime
+  
+  grossPay        Decimal         @db.Decimal(10, 2)
+  netPay          Decimal         @db.Decimal(10, 2)
+  
+  // Deductions stored as JSON for flexibility
+  deductions      String?         // JSON: {federal: 100, state: 50, insurance: 75, etc}
+  
+  hoursWorked     Decimal?        @db.Decimal(6, 2)
+  hourlyRate      Decimal?        @db.Decimal(8, 2)
+  
+  fileName        String
+  fileUrl         String
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([employeeId])
+  @@index([payDate])
+}
+
+// ==================== AUDIT LOGS ====================
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  userId      String?     // Can be null for system actions
+  user        User?       @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
+  
+  action      AuditAction
+  entityType  String      // e.g., "User", "PTORequest", "PayStub"
+  entityId    String?     // ID of the affected entity
+  
+  details     String?     // JSON with additional details
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime    @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_COMPLETE
+  TWO_FACTOR_ENABLED
+  TWO_FACTOR_DISABLED
+  PROFILE_UPDATE
+  EMPLOYEE_CREATE
+  EMPLOYEE_UPDATE
+  EMPLOYEE_DELETE
+  PTO_REQUEST_CREATE
+  PTO_REQUEST_APPROVE
+  PTO_REQUEST_DENY
+  PTO_REQUEST_CANCEL
+  PAYSTUB_UPLOAD
+  PAYSTUB_VIEW
+  DOCUMENT_UPLOAD
+  DOCUMENT_VIEW
+  SETTINGS_UPDATE
+}
+
+// ==================== PASSWORD RESET ====================
+
+model PasswordResetToken {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  token       String   @unique  // Hashed token
+  expiresAt   DateTime
+  usedAt      DateTime?
+  
+  createdAt   DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
 }
 
