@@ -70,20 +70,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-nova-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-nova-50 flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-nova-400 to-nova-600 shadow-lg shadow-nova-500/25 mb-4">
-            <span className="text-white font-bold text-2xl">N</span>
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-nova-400 to-nova-600 shadow-lg shadow-nova-500/25 mb-3 sm:mb-4">
+            <span className="text-white font-bold text-xl sm:text-2xl">N</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Nova Creations</h1>
-          <p className="text-slate-500 mt-1">Employee Portal</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Nova Creations</h1>
+          <p className="text-slate-500 mt-1 text-sm sm:text-base">Employee Portal</p>
         </div>
 
         {/* Login Card */}
         <Card>
-          <CardBody className="p-8">
+          <CardBody className="p-5 sm:p-8">
             <h2 className="text-xl font-semibold text-slate-900 text-center mb-6">
               Sign in to your account
             </h2>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface PortalLayoutProps {
@@ -20,9 +20,23 @@ const navigation = [
   { name: 'Security', href: '/portal/security', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
 ];
 
+// Bottom nav items for mobile (subset of main nav)
+const mobileNavItems = [
+  navigation[0], // Home
+  navigation[2], // Time Off
+  navigation[3], // Pay Stubs
+  navigation[6], // Security
+];
+
 export function PortalLayout({ children, userName }: PortalLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close menu when route changes
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -32,24 +46,38 @@ export function PortalLayout({ children, userName }: PortalLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-40">
-        <div className="flex items-center justify-between h-full px-6 max-w-7xl mx-auto">
+      <header className="fixed top-0 left-0 right-0 h-14 sm:h-16 bg-white border-b border-slate-200 z-40">
+        <div className="flex items-center justify-between h-full px-4 sm:px-6 max-w-7xl mx-auto">
           <Link href="/portal" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-nova-400 to-nova-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm">N</span>
             </div>
-            <span className="text-lg font-semibold text-slate-900">Nova Creations</span>
+            <span className="text-base sm:text-lg font-semibold text-slate-900 hidden xs:inline">Nova Creations</span>
+            <span className="text-base font-semibold text-slate-900 xs:hidden">Nova</span>
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {userName && (
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-slate-600 hidden sm:inline">
                 Welcome, <span className="font-medium text-slate-900">{userName}</span>
               </span>
             )}
+            
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            {/* Desktop logout */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
             >
               <svg
                 className="w-4 h-4"
@@ -70,8 +98,67 @@ export function PortalLayout({ children, userName }: PortalLayoutProps) {
         </div>
       </header>
 
-      {/* Sidebar */}
-      <aside className="fixed top-16 left-0 w-56 h-[calc(100vh-4rem)] bg-white border-r border-slate-200">
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 bg-black/50 z-40 top-14"
+            onClick={() => setMenuOpen(false)}
+          />
+          <div className="md:hidden fixed top-14 left-0 right-0 bg-white border-b border-slate-200 z-50 shadow-lg">
+            <nav className="p-2">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-nova-50 text-nova-600'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    )}
+                  >
+                    <svg
+                      className="w-5 h-5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                    </svg>
+                    {item.name}
+                  </Link>
+                );
+              })}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors mt-2 border-t border-slate-100 pt-4"
+              >
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                Sign out
+              </button>
+            </nav>
+          </div>
+        </>
+      )}
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:block fixed top-16 left-0 w-56 h-[calc(100vh-4rem)] bg-white border-r border-slate-200 overflow-y-auto">
         <nav className="p-4 space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
@@ -87,7 +174,7 @@ export function PortalLayout({ children, userName }: PortalLayoutProps) {
                 )}
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-5 h-5 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -101,11 +188,45 @@ export function PortalLayout({ children, userName }: PortalLayoutProps) {
         </nav>
       </aside>
 
+      {/* Mobile bottom navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 safe-area-pb">
+        <div className="flex items-center justify-around h-full">
+          {mobileNavItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[60px]',
+                  isActive ? 'text-nova-600' : 'text-slate-500'
+                )}
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? 2 : 1.5} d={item.icon} />
+                </svg>
+                <span className="text-xs font-medium">{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
       {/* Main content */}
-      <main className="pt-16 pl-56">
-        <div className="p-8 max-w-5xl">{children}</div>
+      <main className="pt-14 sm:pt-16 pb-20 md:pb-0 md:pl-56">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">{children}</div>
       </main>
+
+      <style jsx>{`
+        .safe-area-pb {
+          padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+      `}</style>
     </div>
   );
 }
-
