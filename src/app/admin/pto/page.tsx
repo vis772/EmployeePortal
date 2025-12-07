@@ -129,20 +129,22 @@ export default async function PTORequestsPage() {
                       </div>
                     </div>
                     
-                    {request.status === 'PENDING' && (
-                      <PTOActionButtons requestId={request.id} />
-                    )}
+                    <div className="flex flex-col items-end gap-2">
+                      {(request.status === 'PENDING' || request.status === 'APPROVED') && (
+                        <PTOActionButtons requestId={request.id} status={request.status} />
+                      )}
 
-                    {request.status !== 'PENDING' && request.reviewNotes && (
-                      <div className="text-right">
-                        <p className="text-sm text-slate-500">{request.reviewNotes}</p>
-                        {request.reviewedAt && (
-                          <p className="text-xs text-slate-400 mt-1">
-                            Reviewed {formatDateTime(request.reviewedAt)}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                      {request.reviewNotes && (
+                        <div className="text-right">
+                          <p className="text-sm text-slate-500 max-w-xs">{request.reviewNotes}</p>
+                          {request.reviewedAt && (
+                            <p className="text-xs text-slate-400 mt-1">
+                              Reviewed {formatDateTime(request.reviewedAt)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * PATCH - Approve or deny a PTO request (admin only)
+ * PATCH - Approve, deny, or revoke a PTO request (admin only)
  */
 export async function PATCH(
   request: NextRequest,
@@ -27,8 +27,16 @@ export async function PATCH(
     const body = await request.json();
     const { action, notes } = body;
 
-    if (!action || !['APPROVE', 'DENY'].includes(action)) {
+    if (!action || !['APPROVE', 'DENY', 'REVOKE'].includes(action)) {
       return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+    }
+
+    // Require reason for denial or revocation
+    if ((action === 'DENY' || action === 'REVOKE') && (!notes || notes.trim() === '')) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `A reason is required when ${action === 'DENY' ? 'denying' : 'revoking'} a PTO request` 
+      }, { status: 400 });
     }
 
     // Get the request
@@ -43,8 +51,17 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'PTO request not found' }, { status: 404 });
     }
 
-    if (ptoRequest.status !== 'PENDING') {
-      return NextResponse.json({ success: false, error: 'Request has already been processed' }, { status: 400 });
+    // Validate status transitions
+    if (action === 'APPROVE' || action === 'DENY') {
+      if (ptoRequest.status !== 'PENDING') {
+        return NextResponse.json({ success: false, error: 'Can only approve/deny pending requests' }, { status: 400 });
+      }
+    }
+
+    if (action === 'REVOKE') {
+      if (ptoRequest.status !== 'APPROVED') {
+        return NextResponse.json({ success: false, error: 'Can only revoke approved requests' }, { status: 400 });
+      }
     }
 
     const newStatus = action === 'APPROVE' ? 'APPROVED' : 'DENIED';
@@ -60,11 +77,11 @@ export async function PATCH(
       },
     });
 
-    // If approved, update the balance
-    if (action === 'APPROVE') {
-      const balanceField = ptoRequest.type === 'VACATION' ? 'vacationUsed' :
-                           ptoRequest.type === 'SICK' ? 'sickUsed' : 'personalUsed';
+    const balanceField = ptoRequest.type === 'VACATION' ? 'vacationUsed' :
+                         ptoRequest.type === 'SICK' ? 'sickUsed' : 'personalUsed';
 
+    // If approved, add to used balance
+    if (action === 'APPROVE') {
       await prisma.pTOBalance.upsert({
         where: { employeeId: ptoRequest.employeeId },
         create: {
@@ -82,6 +99,24 @@ export async function PATCH(
       });
     }
 
+    // If revoking, restore the balance (subtract from used)
+    if (action === 'REVOKE') {
+      const existingBalance = await prisma.pTOBalance.findUnique({
+        where: { employeeId: ptoRequest.employeeId },
+      });
+
+      if (existingBalance) {
+        await prisma.pTOBalance.update({
+          where: { employeeId: ptoRequest.employeeId },
+          data: {
+            [balanceField]: {
+              decrement: ptoRequest.totalDays,
+            },
+          },
+        });
+      }
+    }
+
     // Audit log
     await auditLogWithRequest({
       userId: user.id,
@@ -92,13 +127,17 @@ export async function PATCH(
         employeeId: ptoRequest.employeeId,
         type: ptoRequest.type,
         totalDays: ptoRequest.totalDays,
+        previousStatus: ptoRequest.status,
+        newStatus,
         notes,
+        wasRevoked: action === 'REVOKE',
       },
     }, request.headers);
 
+    const actionWord = action === 'APPROVE' ? 'approved' : action === 'REVOKE' ? 'revoked' : 'denied';
     return NextResponse.json({
       success: true,
-      message: `PTO request ${action.toLowerCase()}d successfully`,
+      message: `PTO request ${actionWord} successfully`,
     });
   } catch (error) {
     console.error('Process PTO error:', error);
