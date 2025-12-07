@@ -5,10 +5,10 @@ import { AuditLogFilters } from './AuditLogFilters';
 
 export const dynamic = 'force-dynamic';
 
-const actionColors: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
+const actionColors: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
   LOGIN: 'success',
   LOGOUT: 'default',
-  LOGIN_FAILED: 'error',
+  LOGIN_FAILED: 'danger',
   PASSWORD_RESET_REQUEST: 'warning',
   PASSWORD_RESET_COMPLETE: 'success',
   TWO_FACTOR_ENABLED: 'success',
@@ -16,10 +16,10 @@ const actionColors: Record<string, 'success' | 'warning' | 'error' | 'default'> 
   PROFILE_UPDATE: 'default',
   EMPLOYEE_CREATE: 'success',
   EMPLOYEE_UPDATE: 'default',
-  EMPLOYEE_DELETE: 'error',
+  EMPLOYEE_DELETE: 'danger',
   PTO_REQUEST_CREATE: 'default',
   PTO_REQUEST_APPROVE: 'success',
-  PTO_REQUEST_DENY: 'error',
+  PTO_REQUEST_DENY: 'danger',
   PTO_REQUEST_CANCEL: 'warning',
   PAYSTUB_UPLOAD: 'success',
   PAYSTUB_VIEW: 'default',
@@ -116,14 +116,14 @@ export default async function AuditLogsPage({ searchParams }: PageProps) {
                     <div className="flex items-start gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         actionColors[log.action] === 'success' ? 'bg-emerald-100' :
-                        actionColors[log.action] === 'error' ? 'bg-red-100' :
+                        actionColors[log.action] === 'danger' ? 'bg-red-100' :
                         actionColors[log.action] === 'warning' ? 'bg-amber-100' :
                         'bg-slate-100'
                       }`}>
                         {log.action.includes('LOGIN') ? (
                           <svg className={`w-5 h-5 ${
                             actionColors[log.action] === 'success' ? 'text-emerald-600' :
-                            actionColors[log.action] === 'error' ? 'text-red-600' :
+                            actionColors[log.action] === 'danger' ? 'text-red-600' :
                             'text-slate-600'
                           }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -131,7 +131,7 @@ export default async function AuditLogsPage({ searchParams }: PageProps) {
                         ) : log.action.includes('PTO') ? (
                           <svg className={`w-5 h-5 ${
                             actionColors[log.action] === 'success' ? 'text-emerald-600' :
-                            actionColors[log.action] === 'error' ? 'text-red-600' :
+                            actionColors[log.action] === 'danger' ? 'text-red-600' :
                             actionColors[log.action] === 'warning' ? 'text-amber-600' :
                             'text-slate-600'
                           }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +140,7 @@ export default async function AuditLogsPage({ searchParams }: PageProps) {
                         ) : (
                           <svg className={`w-5 h-5 ${
                             actionColors[log.action] === 'success' ? 'text-emerald-600' :
-                            actionColors[log.action] === 'error' ? 'text-red-600' :
+                            actionColors[log.action] === 'danger' ? 'text-red-600' :
                             actionColors[log.action] === 'warning' ? 'text-amber-600' :
                             'text-slate-600'
                           }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
